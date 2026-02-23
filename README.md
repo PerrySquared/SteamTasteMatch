@@ -20,6 +20,8 @@ This extension:
 * Identifies reviewers who consistently agree with your ratings in overlapping games
 * Calculates the percentage of those aligned reviewers for a given game
 
+<img width="380" height="577" alt="image" src="https://github.com/user-attachments/assets/eb4e21ea-373d-45c5-879a-3ae9410109b7" />
+
 ## Installation
 
 ### Chromium
