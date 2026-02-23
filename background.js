@@ -568,6 +568,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ started: true });
   } else if (message.action === 'cancelAnalysis') {
     shouldCancel = true;
+    // Immediately update storage to reflect cancelled state
+    chrome.storage.local.set({
+      analysisRunning: false,
+      analysisProgress: 'Cancelled'
+    });
     sendResponse({ cancelled: true });
   } else if (message.action === 'setLogging') {
     loggingEnabled = message.enabled;

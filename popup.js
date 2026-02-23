@@ -348,7 +348,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     resultsDisplay.innerHTML = `
       <div class="result-card">
-        <div class="result-title">${gameName || 'Current Game'}</div>
         <div class="result-score">${score}%</div>
         <div class="result-details">
           <p><strong>Positive Rating</strong> from reviewers with similar taste</p>
