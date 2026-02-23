@@ -97,12 +97,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       addLog('Logging enabled', 'success');
     } else {
       logWindow.classList.add('disabled');
+      logWindow.innerHTML = ''; // Clear display immediately
       // Clear logs from storage to save space
       await chrome.storage.local.set({ analysisLogs: [] });
     }
     
-    // Notify background script
-    chrome.runtime.sendMessage({ action: 'setLogging', enabled });
+    // Notify background script (non-blocking)
+    try {
+      chrome.runtime.sendMessage({ action: 'setLogging', enabled });
+    } catch (error) {
+      // Ignore if background script isn't ready
+    }
   });
 
   // Clear log button
@@ -293,9 +298,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
   
-      // Show error if present
+      // Show error if present (cancellation won't have an error)
       if (state.analysisError) {
         showStatus(`Error: ${state.analysisError}`, 'error');
+      }
+      
+      // Handle cancelled state (no error, no result)
+      if (state.analysisProgress === 'Cancelled' && !state.analysisResult && !state.analysisError) {
+        showStatus('Analysis was cancelled', 'warning');
       }
     }
   }
@@ -309,7 +319,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
     
-    if (type === 'success' || type === 'error') {
+    // Only auto-hide success messages, not errors or warnings
+    if (type === 'success') {
       setTimeout(() => {
         statusDisplay.classList.remove('active');
       }, 3000);

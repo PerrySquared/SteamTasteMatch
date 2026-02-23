@@ -48,14 +48,17 @@ async function startBackgroundAnalysis(params) {
       await chrome.storage.local.set({
         analysisRunning: false,
         analysisProgress: 'Cancelled',
-        analysisError: 'Analysis was cancelled by user'
+        analysisResult: null,
+        analysisError: null  // Don't set error for cancellation
       });
+      // No notification for cancellation
     } else {
       // Save result
       await chrome.storage.local.set({
         analysisRunning: false,
         analysisProgress: 'Complete',
-        analysisResult: result.data
+        analysisResult: result.data,
+        analysisError: null
       });
 
       // Show notification
@@ -70,21 +73,24 @@ async function startBackgroundAnalysis(params) {
       await logProgress('Analysis complete! Notification sent.', 'success');
     }
   } catch (error) {
-    await chrome.storage.local.set({
-      analysisRunning: false,
-      analysisProgress: 'Error',
-      analysisError: error.message
-    });
+    // Only set error if it's not a cancellation
+    if (error.message !== 'Cancelled') {
+      await chrome.storage.local.set({
+        analysisRunning: false,
+        analysisProgress: 'Error',
+        analysisError: error.message
+      });
 
-    await chrome.notifications.create({
-      type: 'basic',
-      iconUrl: 'icon128.png',
-      title: 'Steam Analysis Failed',
-      message: error.message,
-      priority: 2
-    });
+      await chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icon128.png',
+        title: 'Steam Analysis Failed',
+        message: error.message,
+        priority: 2
+      });
 
-    await logProgress(`Analysis failed: ${error.message}`, 'error');
+      await logProgress(`Analysis failed: ${error.message}`, 'error');
+    }
   }
 
   analysisInProgress = false;
@@ -531,7 +537,7 @@ async function updateProgress(text) {
 }
 
 async function logProgress(text, type = 'info') {
-  if (!loggingEnabled) return; // Skip if logging disabled
+  if (!loggingEnabled) return; // Skip immediately if logging disabled
   
   const timestamp = new Date().toLocaleTimeString('en-US', { 
     hour12: false, 
@@ -540,9 +546,14 @@ async function logProgress(text, type = 'info') {
     second: '2-digit'
   });
 
-  const { analysisLogs = [] } = await chrome.storage.local.get('analysisLogs');
-  analysisLogs.push({ timestamp, text, type });
-  await chrome.storage.local.set({ analysisLogs });
+  try {
+    const { analysisLogs = [] } = await chrome.storage.local.get('analysisLogs');
+    analysisLogs.push({ timestamp, text, type });
+    await chrome.storage.local.set({ analysisLogs });
+  } catch (error) {
+    // Silently fail if storage operations fail
+    console.error('Failed to log:', error);
+  }
 }
 
 async function updateProgressPercent(percent) {
