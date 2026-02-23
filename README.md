@@ -124,4 +124,4 @@ It could be possible to build an autoupdating review database that uses Valve's 
 
 # Contribution
  
-Since it's more of a "proof of concept" thing, at least until I somehow deal with the slow scraping, pull requests are unlikely to be monitored (I would limit them if I could, but such technology is too far ahead of my time). However, you are free to fork the project to push the idea forward.
+Since it's more of a "proof of concept" thing, at least until I somehow deal with the slow scraping, issues are unlikely to be addressed. However, you are free to fork the project to actively push the idea forward.
