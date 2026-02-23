@@ -119,3 +119,9 @@ Check the extension log for progress.
 # Fix Possibility
 
 It could be possible to build an autoupdating review database that uses Valve's API, and group the fetched reviews from every request under relevant steamIDs. Then, likely, every request would be stripped down to something akin to "steamID + every (gameID + Rating)". This shouldn't weigh more than a dozen GBs, but could take days if not weeks to gather all data; there's also a possibility of API rate limits not being enough to keep up with the amount of the reviews posted daily. Also would require hosting and everything that comes with it. Might be worth looking into.
+
+---
+
+# Contribution
+ 
+Since it's more of a "proof of concept" thing, at least until I somehow deal with the slow scraping, pull requests are unlikely to be monitored (I would limit them if I could, but such technology is too far ahead of my time). However, you are free to fork the project to push the idea forward.
