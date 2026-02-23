@@ -74,7 +74,7 @@ The extension's popup can be closed during processing — analysis continues in 
 3. Fetches full review history for each reviewer.
 4. Compares their thumbs-up/down decisions against yours for matching games.
 5. Computes:
-   * Overlap count
+   * Average overlap count
    * Agreement percentage
    * Personalized recommendation score
 
@@ -108,6 +108,7 @@ Check the extension log for progress.
 # Limitations
 
 - Really slow, getting a comprehensive overview from 100,000+ reviews is unfeasible (without a way to fetch all reviews from a user via API)
+- Since it's really slow, it's difficult to gather profiles with matching tastes (0-2 matches per 100 profiles on default settings)
 - No caching
 - Rate-limit risk
 - Susceptible to Steam HTML structure changes
