@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steam Taste Matcher</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <h2>Steam Taste Matcher</h2>
+
+        <!-- Steam ID Configuration -->
+        <div class="config-section">
+            <label for="steamId">Your Steam ID:</label>
+            <input type="text" id="steamId" placeholder="e.g., 76561198012345678 or username">
+            <button id="saveSteamId" class="small-btn">Save</button>
+            <div class="help-text">
+                Enter your Steam ID or custom URL username.<br>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Slider Controls -->
+        <div class="slider-section">
+            <div class="slider-group">
+                <label for="overlapSlider">
+                    Minimum Game Overlap
+                    <span class="info-icon"
+                        title="Minimum number of the same games that both you and the reviewer have reviewed. Higher values = more reliable, but fewer matching profiles.">ⓘ</span>
+                </label>
+                <div class="slider-container">
+                    <input type="range" id="overlapSlider" min="1" max="50" value="4" step="1">
+                    <span id="overlapValue" class="value-display">4</span>
+                </div>
+            </div>
+
+            <div class="slider-group">
+                <label for="similaritySlider">
+                    Minimum Taste Similarity (%)
+                    <span class="info-icon"
+                        title="Minimum percentage of overlapping games where you and the reviewer agreed (both positive or both negative). 100% = perfect agreement, 50% = basically random.">ⓘ</span>
+                </label>
+                <div class="slider-container">
+                    <input type="range" id="similaritySlider" min="50" max="100" value="75" step="5">
+                    <span id="similarityValue" class="value-display">75%</span>
+                </div>
+            </div>
+
+            <div class="slider-group">
+                <label for="maxProfilesSlider">
+                    Maximum Profiles to Check
+                    <span class="info-icon"
+                        title="Limit how many reviewer profiles to analyze. Lower = faster analysis but less reliable. Higher = slower but more comprehensive. Be wary of anti-scraping protection.">ⓘ</span>
+                </label>
+                <div class="slider-container">
+                    <input type="range" id="maxProfilesSlider" min="50" max="1000" value="100" step="50">
+                    <span id="maxProfilesValue" class="value-display">100</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="button-container">
+            <button id="analyzeBtn" class="analyze-btn">
+                <span class="btn-text">Analyze Reviews</span>
+                <span class="btn-loading" style="display: none;">Analyzing...</span>
+            </button>
+            <button id="cancelBtn" class="cancel-btn" style="display: none;">
+                Cancel Analysis   
+            </button>
+        </div>
+
+        <div class="info-message">
+            💡 Analysis runs in background. You can close this popup and you'll get a notification when it's complete.
+        </div>
+
+        <!-- Status Display -->
+        <div id="statusDisplay" class="status-display"></div>
+
+        <!-- Results Display -->
+        <div id="resultsDisplay" class="results-display"></div>
+
+        <!-- Logging Toggle -->
+        <div class="log-section">
+            <div class="log-header">
+                <span>Activity Log</span>
+                <div class="log-controls">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="loggingToggle" checked>
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-text">Enable Logging</span>
+                    </label>
+                    <button id="copyLogBtn" class="clear-log-btn">Copy</button>
+                    <button id="clearLogBtn" class="clear-log-btn">Clear</button>
+                </div>
+            </div>
+            <div id="logWindow" class="log-window"></div>    
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

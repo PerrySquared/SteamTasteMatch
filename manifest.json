@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Steam Review Taste Matcher",
+  "version": "1.0.0",
+  "description": "Analyze game reviews based on taste overlap with reviewers",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://store.steampowered.com/*",
+    "https://steamcommunity.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "128": "icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://store.steampowered.com/app/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "icons": {
+    "128": "icon128.png"
+  }
+}
