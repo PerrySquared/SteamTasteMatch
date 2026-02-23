@@ -77,7 +77,6 @@ The extension's popup can be closed during processing — analysis continues in 
 4. Compares their thumbs-up/down decisions against yours for matching games.
 5. Computes:
    * Average overlap count
-   * Agreement percentage
    * Personalized recommendation score
 
 ---
