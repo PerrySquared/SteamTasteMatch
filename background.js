@@ -40,57 +40,47 @@ async function startBackgroundAnalysis(params) {
     analysisLogs: []
   });
 
-  try {
-    const result = await analyzeGame(params);
-    
-    if (shouldCancel) {
-      await logProgress('Analysis cancelled', 'warning');
-      await chrome.storage.local.set({
-        analysisRunning: false,
-        analysisProgress: 'Cancelled',
-        analysisResult: null,
-        analysisError: null  // Don't set error for cancellation
-      });
-      // No notification for cancellation
-    } else {
-      // Save result
-      await chrome.storage.local.set({
-        analysisRunning: false,
-        analysisProgress: 'Complete',
-        analysisResult: result.data,
-        analysisError: null
-      });
+  const result = await analyzeGame(params);
+  
+  // Check if cancelled
+  if (result.cancelled) {
+    await logProgress('Analysis cancelled by user', 'warning');
+    await chrome.storage.local.set({
+      analysisRunning: false,
+      analysisProgress: 'Cancelled',
+      analysisResult: null,
+      analysisError: null
+    });
+    // No notification for cancellation
+  } 
+  // Check if error occurred
+  else if (result.error) {
+    await chrome.storage.local.set({
+      analysisRunning: false,
+      analysisProgress: 'Error',
+      analysisError: result.error
+    });
+    // No notification for errors - user will see it in the popup
+  }
+  // Success - ONLY notify here
+  else if (result.success) {
+    await chrome.storage.local.set({
+      analysisRunning: false,
+      analysisProgress: 'Complete',
+      analysisResult: result.data,
+      analysisError: null
+    });
 
-      // Show notification
-      await chrome.notifications.create({
-        type: 'basic',
-        iconUrl: 'icon128.png',
-        title: 'Steam Analysis Complete!',
-        message: `Score: ${result.data.score}% positive from ${result.data.matchingReviewers} matching reviewers`,
-        priority: 2
-      });
+    // ONLY notification that appears
+    await chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icon128.png',
+      title: 'Steam Analysis Complete!',
+      message: `Score: ${result.data.score}% positive from ${result.data.matchingReviewers} matching reviewers`,
+      priority: 2
+    });
 
-      await logProgress('Analysis complete! Notification sent.', 'success');
-    }
-  } catch (error) {
-    // Only set error if it's not a cancellation
-    if (error.message !== 'Cancelled') {
-      await chrome.storage.local.set({
-        analysisRunning: false,
-        analysisProgress: 'Error',
-        analysisError: error.message
-      });
-
-      await chrome.notifications.create({
-        type: 'basic',
-        iconUrl: 'icon128.png',
-        title: 'Steam Analysis Failed',
-        message: error.message,
-        priority: 2
-      });
-
-      await logProgress(`Analysis failed: ${error.message}`, 'error');
-    }
+    await logProgress('Analysis complete! Notification sent.', 'success');
   }
 
   analysisInProgress = false;
@@ -99,59 +89,57 @@ async function startBackgroundAnalysis(params) {
 
 // Main analysis function
 async function analyzeGame({ appId, steamId, minOverlap, minSimilarity, maxProfiles }) {
-  try {
-    // Step 1: Fetch user reviews
-    await updateProgress('Fetching your review history...');
-    await logProgress('Fetching your review history...', 'info');
-    
-    const userReviews = await fetchUserReviews(steamId);
-    
-    if (shouldCancel) throw new Error('Cancelled');
-    
-    if (userReviews.length === 0) {
-      throw new Error('No reviews found for your profile. Make sure your profile is public.');
-    }
-
-    await logProgress(`Found ${userReviews.length} of your reviews`, 'success');
-    
-    // Step 2: Fetch game reviewers
-    await updateProgress(`Found ${userReviews.length} reviews`);
-    await logProgress(`Fetching game reviewers (limit: ${maxProfiles})...`, 'info');
-    
-    const gameReviewers = await fetchGameReviewers(appId, maxProfiles);
-    
-    if (shouldCancel) throw new Error('Cancelled');
-    
-    if (gameReviewers.length === 0) {
-      throw new Error('No reviewers found for this game.');
-    }
-
-    await logProgress(`Found ${gameReviewers.length} reviewers to analyze`, 'success');
-    await updateProgress(`Analyzing ${gameReviewers.length} profiles...`);
-    await logProgress('Beginning profile analysis (this will take a while)...', 'info');
-    
-    // Step 3: Fetch all reviewer data
-    const reviewerData = await fetchAllReviewerData(gameReviewers, maxProfiles);
-    
-    if (shouldCancel) throw new Error('Cancelled');
-    
-    // Step 4: Calculate score
-    await logProgress('Comparing reviews and calculating final score...', 'info');
-    await updateProgress('Calculating final score...');
-    
-    const results = calculateScore(userReviews, reviewerData, appId, minOverlap, minSimilarity);
-    
-    await logProgress(`Analysis complete! Found ${results.matchingReviewers} matching reviewers`, 'success');
-    
-    return {
-      success: true,
-      data: results
-    };
-  } catch (error) {
-    console.error('Analysis error:', error);
-    await logProgress(`Analysis failed: ${error.message}`, 'error');
-    throw error;
+  await updateProgress('Fetching your review history...');
+  await logProgress('Fetching your review history...', 'info');
+  
+  const userReviews = await fetchUserReviews(steamId);
+  
+  if (shouldCancel) return { cancelled: true };
+  
+  if (userReviews.error) {
+    await logProgress(`Failed to fetch reviews: ${userReviews.error}`, 'error');
+    return { error: userReviews.error };
   }
+  
+  if (userReviews.length === 0) {
+    const msg = 'No reviews found for your profile. Make sure your profile is public.';
+    await logProgress(msg, 'error');
+    return { error: msg };
+  }
+
+  await logProgress(`Found ${userReviews.length} of your reviews`, 'success');
+  await updateProgress(`Found ${userReviews.length} reviews`);
+  await logProgress(`Fetching game reviewers (limit: ${maxProfiles})...`, 'info');
+  
+  const gameReviewers = await fetchGameReviewers(appId, maxProfiles);
+  
+  if (shouldCancel) return { cancelled: true };
+  
+  if (gameReviewers.length === 0) {
+    const msg = 'No reviewers found for this game.';
+    await logProgress(msg, 'error');
+    return { error: msg };
+  }
+
+  await logProgress(`Found ${gameReviewers.length} reviewers to analyze`, 'success');
+  await updateProgress(`Analyzing ${gameReviewers.length} profiles...`);
+  await logProgress('Beginning profile analysis (this will take a while)...', 'info');
+  
+  const reviewerData = await fetchAllReviewerData(gameReviewers, maxProfiles);
+  
+  if (shouldCancel) return { cancelled: true };
+  
+  await logProgress('Comparing reviews and calculating final score...', 'info');
+  await updateProgress('Calculating final score...');
+  
+  const results = calculateScore(userReviews, reviewerData, appId, minOverlap, minSimilarity);
+  
+  await logProgress(`Analysis complete! Found ${results.matchingReviewers} matching reviewers`, 'success');
+  
+  return {
+    success: true,
+    data: results
+  };
 }
 
 // Parse Steam ID from various input formats
@@ -184,7 +172,7 @@ async function fetchUserReviews(steamId) {
   const cleanedId = parseSteamId(steamId);
   
   if (!cleanedId) {
-    throw new Error('Invalid Steam ID format. Please enter either your steamID64 (numbers) or custom URL username.');
+    return { error: 'Invalid Steam ID format. Please enter either your steamID64 (numbers) or custom URL username.' };
   }
 
   let baseUrl;
@@ -197,7 +185,7 @@ async function fetchUserReviews(steamId) {
   const allReviews = await fetchAllReviewsFromProfile(baseUrl, 'Your profile');
   
   if (allReviews.length === 0) {
-    throw new Error('Could not fetch your reviews. Make sure your Steam ID is correct and your profile is public.');
+    return { error: 'Could not fetch your reviews. Make sure your Steam ID is correct and your profile is public.' };
   }
   
   return allReviews;
@@ -341,36 +329,40 @@ async function fetchAllReviewsFromProfile(baseUrl, profileLabel = 'Profile') {
   const maxPages = 50;
   
   while (page <= maxPages) {
-    try {
-      const url = page === 1 ? baseUrl : `${baseUrl}?p=${page}`;
-      
-      // Fetch with logging
-      await logProgress(`  Fetching page ${page} from ${profileLabel}...`, 'info');
-      const html = await fetchWithRetry(url, 3, false);
-      const reviews = await parseReviewsFromHTML(html, false);
-      
-      await logProgress(`    └─ Found ${reviews.length} reviews on page ${page}`, 'success');
-      
-      if (reviews.length === 0) {
-        break;
-      }
-      
-      // Add reviews
-      allReviews.push(...reviews);
-      
-      // Less than 10 is last page - stop
-      if (reviews.length < 10) {
-        break;
-      }
-      
-      // Full page - try next page
-      page++;
-      await delay(200);
-      
-    } catch (error) {
-      await logProgress(`  ERROR on page ${page}: ${error.message}`, 'error');
+    if (shouldCancel) break;
+    
+    const url = page === 1 ? baseUrl : `${baseUrl}?p=${page}`;
+    
+    // Fetch with logging
+    await logProgress(`  Fetching page ${page} from ${profileLabel}...`, 'info');
+    const html = await fetchWithRetry(url, 3, false);
+    
+    // Handle fetch failure
+    if (!html) {
+      await logProgress(`  Failed to fetch page ${page}, stopping`, 'error');
       break;
     }
+    
+    const reviews = await parseReviewsFromHTML(html, false);
+    
+    await logProgress(`    └─ Found ${reviews.length} reviews on page ${page}`, 'success');
+    
+    // No reviews? Stop
+    if (reviews.length === 0) {
+      break;
+    }
+    
+    // Add reviews
+    allReviews.push(...reviews);
+    
+    // Less than 10? Last page - stop
+    if (reviews.length < 10) {
+      break;
+    }
+    
+    // Full page (10 reviews)? Try next page
+    page++;
+    await delay(200);
   }
   
   await logProgress(`  TOTAL for ${profileLabel}: ${allReviews.length} reviews from ${page} page(s)`, 'success');
@@ -493,7 +485,7 @@ function calculateScore(userReviews, reviewerData, targetAppId, minOverlap, minS
 // Utility functions
 async function fetchWithRetry(url, retries = 3, silent = false) {
   for (let i = 0; i < retries; i++) {
-    if (shouldCancel) throw new Error('Cancelled');
+    if (shouldCancel) return null;
     
     try {
       const response = await fetch(url, {
@@ -512,17 +504,20 @@ async function fetchWithRetry(url, retries = 3, silent = false) {
       });
       
       if (!response.ok) {
+        if (i === retries - 1 && !silent) {
+          await logProgress(`HTTP ${response.status} for ${url}`, 'error');
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      const text = await response.text();
-      // Success - no logging, let the caller handle it
-      return text;
+      return await response.text();
     } catch (error) {
-      if (!silent && i === retries - 1) {
-        await logProgress(`Fetch failed after ${retries} attempts: ${error.message}`, 'error');
+      if (i === retries - 1) {
+        if (!silent) {
+          await logProgress(`Fetch failed after ${retries} attempts: ${error.message}`, 'error');
+        }
+        return null;
       }
-      if (i === retries - 1) throw error;
       await delay(1000 * (i + 1));
     }
   }
