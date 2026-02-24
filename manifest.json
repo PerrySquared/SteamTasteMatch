@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Steam Review Taste Matcher",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Analyze game reviews based on taste overlap with reviewers",
   "permissions": [
     "activeTab",

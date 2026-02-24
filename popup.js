@@ -184,8 +184,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const steamId = steamIdInput.value.trim();
     
     if (!steamId) {
-      // Clear any old errors from storage
-      await chrome.storage.local.set({ analysisError: null });
+      // Clear any old state from storage
+      await chrome.storage.local.set({ 
+        analysisError: null,
+        analysisProgress: null  
+      });
       showStatus('Please enter your Steam ID first', 'error');
       if (loggingToggle.checked) {
         addLog('Error: No Steam ID provided', 'error');
@@ -193,7 +196,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
   
-    // Get current slider values (already saved in storage)
+    // Get current slider values 
     const minOverlap = parseInt(overlapSlider.value);
     const minSimilarity = parseInt(similaritySlider.value);
     const maxProfiles = parseInt(maxProfilesSlider.value);
@@ -202,8 +205,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     
     if (!tab.url || !tab.url.includes('store.steampowered.com/app/')) {
-      // Clear any old errors from storage
-      await chrome.storage.local.set({ analysisError: null });
+      // Clear any old state from storage
+      await chrome.storage.local.set({ 
+        analysisError: null,
+        analysisProgress: null  
+      });
       showStatus('Please open a Steam game page first', 'error');
       if (loggingToggle.checked) {
         addLog('Error: Not on a Steam game page', 'error');
@@ -214,8 +220,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Extract app ID from URL
     const appIdMatch = tab.url.match(/\/app\/(\d+)/);
     if (!appIdMatch) {
-      // Clear any old errors from storage
-      await chrome.storage.local.set({ analysisError: null });
+      // Clear any old state from storage
+      await chrome.storage.local.set({ 
+        analysisError: null,
+        analysisProgress: null  
+      });
       showStatus('Could not find game ID from page URL', 'error');
       if (loggingToggle.checked) {
         addLog('Error: Could not extract game ID from URL', 'error');
@@ -232,7 +241,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     await chrome.storage.local.set({ 
       analysisLogs: [], 
       analysisResult: null,
-      analysisError: null  // Clear old errors
+      analysisError: null,
+      analysisProgress: null  
     });
   
     // Show cancel button, hide analyze button
